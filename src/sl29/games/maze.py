@@ -6,11 +6,12 @@ import random
 class Maze:
     """Class representing a maze"""
 
-    def __init__(self, width, length, height=1):
+    def __init__(self, width, length, height=1, density = 0):
         """Initialize the maze with a 2D list of characters"""
         self.width = width
         self.length = length
         self.height = height
+        self.density = density
         # 1. Create a 3D grid graph where each node has edges to its adjacent nodes (up, down, left, right, and optionally up/down in 3D)
         self.graph = nx.grid_graph(dim=[width, length, height])
 
@@ -25,7 +26,7 @@ class Maze:
         self.create_maze()
 
     def create_maze(self):
-        def _recur_maze(graph,long,lar,haut):
+        def _recur_maze(graph,long,lar,haut,density = 0.0):
             if long == 1 and lar == 1 and haut == 1:
                 return graph
             else:
@@ -40,11 +41,19 @@ class Maze:
                     graph1 = graph.subgraph(nodes_a).copy()
                     graph2 = graph.subgraph(nodes_b).copy()
                     # Appels récursifs
-                    graph1 = _recur_maze(graph1,(long//2),lar,haut)
-                    graph2 = _recur_maze(graph2,((long//2)+long%2),lar,haut)
-                    # Fusion et ajout du passage
+                    graph1 = _recur_maze(graph1,(long//2),lar,haut,density)
+                    graph2 = _recur_maze(graph2,((long//2)+long%2),lar,haut,density)
+                    # Fusion
                     fused_graph = nx.compose(graph1, graph2)
-                    fused_graph.add_edge((min_z,min_y,min_x + (long//2)-1),(min_z,min_y,min_x + (long//2)))
+                    # Calcul du nombre de portes
+                    nb_portes = round(lar * haut * density)
+                    if nb_portes == 0: nb_portes = 1
+                    for _ in range(nb_portes):
+                        # Randomization de la porte
+                        y_plus = random.randint(0,lar-1)
+                        z_plus = random.randint(0,haut-1)
+                        # Ajout du passage
+                        fused_graph.add_edge((min_z + z_plus,min_y + y_plus,min_x + (long//2)-1),(min_z + z_plus,min_y + y_plus,min_x + (long//2)))
                     return fused_graph
                 if lar >= long and lar >= haut:
                     # Division
@@ -54,16 +63,24 @@ class Maze:
                     graph1 = graph.subgraph(nodes_a).copy()
                     graph2 = graph.subgraph(nodes_b).copy()
                     # Appels récursifs
-                    graph1 = _recur_maze(graph1,long,(lar//2),haut)
-                    graph2 = _recur_maze(graph2,long,((lar//2)+lar%2),haut)
+                    graph1 = _recur_maze(graph1,long,(lar//2),haut,density)
+                    graph2 = _recur_maze(graph2,long,((lar//2)+lar%2),haut,density)
                     # Fusion et ajout du passage
                     fused_graph = nx.compose(graph1, graph2)
-                    fused_graph.add_edge((min_z,min_y + (lar//2)-1,min_x),(min_z,min_y + (lar//2),min_x))
+                    # Calcul du nombre de portes
+                    nb_portes = round(long * haut * density)
+                    if nb_portes == 0: nb_portes = 1
+                    for _ in range(nb_portes):
+                        # Randomization de la porte
+                        x_plus = random.randint(0,long-1)
+                        z_plus = random.randint(0,haut-1)
+                        # Ajout du passage
+                        fused_graph.add_edge((min_z + z_plus,min_y + (lar//2)-1,min_x + x_plus),(min_z + z_plus,min_y + (lar//2),min_x + x_plus))
                     return fused_graph
                 else:
                     return graph
         
-        self.graph = _recur_maze(self.graph,self.width,self.length,self.height)
+        self.graph = _recur_maze(self.graph,self.width,self.length,self.height,self.density)
 
 class Cell:
     """Class representing a cell in the maze"""
@@ -89,5 +106,5 @@ def plot_interactive_3d(maze):
     fig.show()
 
 if __name__ == '__main__':
-    maze = Maze(16,16)
+    maze = Maze(20,20,density=0.2)
     plot_interactive_3d(maze)
