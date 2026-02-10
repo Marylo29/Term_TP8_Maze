@@ -78,7 +78,27 @@ class Maze:
                         fused_graph.add_edge((min_z + z_plus,min_y + (lar//2)-1,min_x + x_plus),(min_z + z_plus,min_y + (lar//2),min_x + x_plus))
                     return fused_graph
                 else:
-                    return graph
+                    # Division
+                    nodes_a = [node for node in nodes if node[0] < (min_z + (haut // 2))]
+                    nodes_b = [node for node in nodes if node[0] >= (min_z + (haut // 2))]
+                    # Sous graphes
+                    graph1 = graph.subgraph(nodes_a).copy()
+                    graph2 = graph.subgraph(nodes_b).copy()
+                    # Appels récursifs
+                    graph1 = _recur_maze(graph1,long,lar,haut//2,density)
+                    graph2 = _recur_maze(graph2,long,lar,((haut//2)+haut%2),density)
+                    # Fusion et ajout du passage
+                    fused_graph = nx.compose(graph1, graph2)
+                    # Calcul du nombre de portes
+                    nb_portes = round(long * lar * density)
+                    if nb_portes == 0: nb_portes = 1
+                    for _ in range(nb_portes):
+                        # Randomization de la porte
+                        x_plus = random.randint(0,long-1)
+                        y_plus = random.randint(0,lar-1)
+                        # Ajout du passage
+                        fused_graph.add_edge((min_z + (haut//2)-1,min_y + y_plus,min_x + x_plus),(min_z + (haut//2),min_y + y_plus,min_x + x_plus))
+                    return fused_graph
         
         self.graph = _recur_maze(self.graph,self.width,self.length,self.height,self.density)
 
@@ -106,5 +126,5 @@ def plot_interactive_3d(maze):
     fig.show()
 
 if __name__ == '__main__':
-    maze = Maze(20,20,density=0.2)
+    maze = Maze(4,4,4)
     plot_interactive_3d(maze)
