@@ -26,13 +26,14 @@ class Maze:
         self.create_maze()
 
     def create_maze(self):
-        def _recur_maze(graph,long,lar,haut,density = 0.0):
-            if long == 1 and lar == 1 and haut == 1:
+        def _recur_maze(graph,tuple_tailles,density = 0.0):
+            if tuple_tailles == (1,1,1):
                 return graph
             else:
-                nodes = graph.nodes
+                long,lar,haut = tuple_tailles
                 nodes_list = sorted([node for node in nodes])
                 min_z,min_y,min_x = nodes_list[0]
+                tuple_coor = ((min_z,haut),(min_y,lar),(min_x,long))
                 if long >= lar and long >= haut:
                     # Division
                     nodes_a = [node for node in nodes if node[2] < (min_x + (long // 2))]
@@ -55,6 +56,7 @@ class Maze:
                         # Ajout du passage
                         fused_graph.add_edge((min_z + z_plus,min_y + y_plus,min_x + (long//2)-1),(min_z + z_plus,min_y + y_plus,min_x + (long//2)))
                     return fused_graph
+
                 if lar >= long and lar >= haut:
                     # Division
                     nodes_a = [node for node in nodes if node[1] < (min_y + (lar // 2))]
