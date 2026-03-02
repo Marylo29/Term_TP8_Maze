@@ -27,82 +27,46 @@ class Maze:
 
     def create_maze(self):
         def _recur_maze(graph,tuple_tailles,density = 0.0):
+            def _sous_recur(graph,tuple_coor:tuple[tuple[int]],nb,density = 0.0):
+                nodes = graph.nodes
+                # Division
+                nodes_a = [node for node in nodes if node[nb] < (tuple_coor[nb][0] + (tuple_coor[nb][1] // 2))]
+                nodes_b = [node for node in nodes if node[nb] >= (tuple_coor[nb][0] + (tuple_coor[nb][1] // 2))]
+                # Sous graphes
+                graph1 = graph.subgraph(nodes_a).copy()
+                graph2 = graph.subgraph(nodes_b).copy()
+                # Appels récursifs
+                tuple_taille_1 = tuple([tuple_coor[i][1] if i != nb else tuple_coor[i][1]//2 for i in range(len(tuple_coor))])
+                tuple_taille_2 = tuple([tuple_coor[i][1] if i != nb else tuple_coor[i][1]//2 + tuple_coor[i][1]%2 for i in range(len(tuple_coor))])
+                graph1 = _recur_maze(graph1,tuple_taille_1,density)
+                graph2 = _recur_maze(graph2,tuple_taille_2,density)
+                # Fusion et ajout du passage
+                fused_graph = nx.compose(graph1, graph2)
+                # Calcul du nombre de portes
+                nb_portes = round(tuple_coor[(nb+1)%3][1] * tuple_coor[(nb+2)%3][1] * density)
+                if nb_portes == 0: nb_portes = 1
+                for _ in range(nb_portes):
+                    # Randomization de la porte
+                    nouv_z,nouv_y,nouv_x = (tuple_coor[i][0] + random.randint(0,tuple_coor[i][1]-1) if i != nb else tuple_coor[i][0] + (tuple_coor[i][1]//2)-1 for i in range(len(tuple_coor)))
+                    # Ajout du passage
+                    fused_graph.add_edge((nouv_z,nouv_y,nouv_x),(nouv_z,nouv_y+1,nouv_x))
+                return fused_graph
+            
             if tuple_tailles == (1,1,1):
                 return graph
             else:
-                long,lar,haut = tuple_tailles
-                nodes_list = sorted([node for node in nodes])
+                haut,lar,long = tuple_tailles
+                nodes_list = sorted([node for node in graph.nodes])
                 min_z,min_y,min_x = nodes_list[0]
                 tuple_coor = ((min_z,haut),(min_y,lar),(min_x,long))
                 if long >= lar and long >= haut:
-                    # Division
-                    nodes_a = [node for node in nodes if node[2] < (min_x + (long // 2))]
-                    nodes_b = [node for node in nodes if node[2] >= (min_x + (long // 2))]
-                    # Sous graphes
-                    graph1 = graph.subgraph(nodes_a).copy()
-                    graph2 = graph.subgraph(nodes_b).copy()
-                    # Appels récursifs
-                    graph1 = _recur_maze(graph1,(long//2),lar,haut,density)
-                    graph2 = _recur_maze(graph2,((long//2)+long%2),lar,haut,density)
-                    # Fusion
-                    fused_graph = nx.compose(graph1, graph2)
-                    # Calcul du nombre de portes
-                    nb_portes = round(lar * haut * density)
-                    if nb_portes == 0: nb_portes = 1
-                    for _ in range(nb_portes):
-                        # Randomization de la porte
-                        y_plus = random.randint(0,lar-1)
-                        z_plus = random.randint(0,haut-1)
-                        # Ajout du passage
-                        fused_graph.add_edge((min_z + z_plus,min_y + y_plus,min_x + (long//2)-1),(min_z + z_plus,min_y + y_plus,min_x + (long//2)))
-                    return fused_graph
-
+                    return _sous_recur(graph,tuple_coor,2,density)
                 if lar >= long and lar >= haut:
-                    # Division
-                    nodes_a = [node for node in nodes if node[1] < (min_y + (lar // 2))]
-                    nodes_b = [node for node in nodes if node[1] >= (min_y + (lar // 2))]
-                    # Sous graphes
-                    graph1 = graph.subgraph(nodes_a).copy()
-                    graph2 = graph.subgraph(nodes_b).copy()
-                    # Appels récursifs
-                    graph1 = _recur_maze(graph1,long,(lar//2),haut,density)
-                    graph2 = _recur_maze(graph2,long,((lar//2)+lar%2),haut,density)
-                    # Fusion et ajout du passage
-                    fused_graph = nx.compose(graph1, graph2)
-                    # Calcul du nombre de portes
-                    nb_portes = round(long * haut * density)
-                    if nb_portes == 0: nb_portes = 1
-                    for _ in range(nb_portes):
-                        # Randomization de la porte
-                        x_plus = random.randint(0,long-1)
-                        z_plus = random.randint(0,haut-1)
-                        # Ajout du passage
-                        fused_graph.add_edge((min_z + z_plus,min_y + (lar//2)-1,min_x + x_plus),(min_z + z_plus,min_y + (lar//2),min_x + x_plus))
-                    return fused_graph
+                    return _sous_recur(graph,tuple_coor,1,density)
                 else:
-                    # Division
-                    nodes_a = [node for node in nodes if node[0] < (min_z + (haut // 2))]
-                    nodes_b = [node for node in nodes if node[0] >= (min_z + (haut // 2))]
-                    # Sous graphes
-                    graph1 = graph.subgraph(nodes_a).copy()
-                    graph2 = graph.subgraph(nodes_b).copy()
-                    # Appels récursifs
-                    graph1 = _recur_maze(graph1,long,lar,haut//2,density)
-                    graph2 = _recur_maze(graph2,long,lar,((haut//2)+haut%2),density)
-                    # Fusion et ajout du passage
-                    fused_graph = nx.compose(graph1, graph2)
-                    # Calcul du nombre de portes
-                    nb_portes = round(long * lar * density)
-                    if nb_portes == 0: nb_portes = 1
-                    for _ in range(nb_portes):
-                        # Randomization de la porte
-                        x_plus = random.randint(0,long-1)
-                        y_plus = random.randint(0,lar-1)
-                        # Ajout du passage
-                        fused_graph.add_edge((min_z + (haut//2)-1,min_y + y_plus,min_x + x_plus),(min_z + (haut//2),min_y + y_plus,min_x + x_plus))
-                    return fused_graph
+                    return _sous_recur(graph,tuple_coor,0,density)
         
-        self.graph = _recur_maze(self.graph,self.width,self.length,self.height,self.density)
+        self.graph = _recur_maze(self.graph,(self.height,self.length,self.width),self.density)
 
 class Cell:
     """Class representing a cell in the maze"""
